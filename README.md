@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Stockpile
 
-## Getting Started
+An AI-assisted inventory tracker I built to manage my own stuff: household supplies, electronics, and home-lab gear. It tracks what I own, flags what's running low, and warns before things expire or warranties lapse.
 
-First, run the development server:
+**Stack:** Next.js (App Router, Server Actions) · TypeScript · Tailwind · Drizzle ORM · libSQL/SQLite · Zod · Vitest
+
+## Run locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run db:push   # create the SQLite schema (local.db)
+npm run db:seed   # load sample data
+npm run dev       # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Other scripts: `npm test`, `npm run typecheck`, `npm run lint`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Design notes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Money is stored as integer cents** to avoid floating-point drift.
+- **Alert rules are pure functions** (`src/lib/inventory.ts`) with unit tests, separate from the UI and DB.
+- **One validation schema** (`itemInputSchema`) serves form input today and will validate AI-extracted items next, so model output is never trusted blindly.
+- **Same DB code for dev and prod:** a local SQLite file in dev, Turso (libSQL) via `DATABASE_URL` / `DATABASE_AUTH_TOKEN` in production.
 
-## Learn More
+## Roadmap
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [x] **Phase 1: Foundation.** CRUD, search/filter/sort, stats dashboard, quantity controls.
+- [x] **Phase 3 (partial): Alerts.** Low stock, expiring, and warranty badges plus a "needs attention" panel.
+- [ ] **Phase 2: AI capture.** Photo/receipt to structured items via Claude vision, with a review-and-confirm step. Natural-language Q&A using tool calls against the DB.
+- [ ] **Phase 3: Notifications.** Scheduled email/push digests, restock suggestions from usage history, spend charts.
+- [ ] **Phase 4: Ship it.** Auth, a seeded read-only public demo mode, rate-limited AI endpoints, CI (GitHub Actions), and Vercel + Turso deployment.

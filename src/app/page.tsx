@@ -1,69 +1,148 @@
-import Image from "next/image";
+import Link from "next/link";
+import { adjustQuantity, deleteItem } from "@/app/actions";
+import { formatCents, getAlerts, totalValueCents } from "@/lib/inventory";
+import { getFacets, listItems, type ItemFilters } from "@/lib/queries";
 
-export default function Home() {
+const SORTS = ["name", "newest", "quantity"] as const;
+const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) || undefined;
+
+const control = "rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700";
+const badge = {
+  danger: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+  warn: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+};
+
+export default async function Dashboard({ searchParams }: PageProps<"/">) {
+  const sp = await searchParams;
+  const sort = SORTS.find((s) => s === first(sp.sort));
+  const filters: ItemFilters = { q: first(sp.q), category: first(sp.category), location: first(sp.location), sort };
+
+  const [list, { categories, locations }] = await Promise.all([listItems(filters), getFacets()]);
+  const withAlerts = list.map((item) => ({ item, alerts: getAlerts(item) }));
+  const attention = withAlerts.filter((r) => r.alerts.length > 0);
+  const filtered = Boolean(filters.q || filters.category || filters.location);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="mx-auto w-full max-w-5xl px-4 py-10">
+      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Stockpile</h1>
+          <p className="text-sm text-zinc-500">Everything you own, and what needs attention.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <Link href="/items/new" className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+          + Add item
+        </Link>
+      </header>
+
+      <section className="mb-8 grid gap-4 sm:grid-cols-3">
+        <Stat label="Items" value={String(list.length)} />
+        <Stat label="Total value" value={formatCents(totalValueCents(list))} />
+        <Stat label="Needs attention" value={String(attention.length)} tone={attention.length ? "warn" : undefined} />
+      </section>
+
+      {attention.length > 0 && (
+        <section className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+          <h2 className="mb-2 text-sm font-semibold">Needs attention</h2>
+          <ul className="space-y-1 text-sm">
+            {attention.map(({ item, alerts }) => (
+              <li key={item.id}>
+                <Link href={`/items/${item.id}/edit`} className="font-medium underline-offset-2 hover:underline">
+                  {item.name}
+                </Link>{" "}
+                — {alerts.map((a) => a.label).join(", ")}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <form className="mb-4 flex flex-wrap gap-3" role="search">
+        <input name="q" defaultValue={filters.q} placeholder="Search name or notes…" aria-label="Search" className={`${control} min-w-48 flex-1`} />
+        <select name="category" defaultValue={filters.category ?? ""} aria-label="Category" className={control}>
+          <option value="">All categories</option>
+          {categories.map((c) => <option key={c}>{c}</option>)}
+        </select>
+        <select name="location" defaultValue={filters.location ?? ""} aria-label="Location" className={control}>
+          <option value="">All locations</option>
+          {locations.map((l) => <option key={l}>{l}</option>)}
+        </select>
+        <select name="sort" defaultValue={sort ?? "name"} aria-label="Sort" className={control}>
+          <option value="name">Sort: name</option>
+          <option value="newest">Sort: newest</option>
+          <option value="quantity">Sort: lowest qty</option>
+        </select>
+        <button className={control}>Apply</button>
+        {filtered && <Link href="/" className={`${control} text-zinc-500`}>Clear</Link>}
+      </form>
+
+      {withAlerts.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-zinc-300 p-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
+          {filtered ? "No items match those filters." : "No items yet. Add your first one."}
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
+              <tr>
+                <th className="px-4 py-2">Item</th>
+                <th className="px-4 py-2">Location</th>
+                <th className="px-4 py-2">Qty</th>
+                <th className="px-4 py-2 text-right">Value</th>
+                <th className="px-4 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {withAlerts.map(({ item, alerts }) => (
+                <tr key={item.id}>
+                  <td className="px-4 py-3">
+                    <div className="font-medium">{item.name}</div>
+                    <div className="text-xs text-zinc-500">{item.category}</div>
+                    {alerts.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {alerts.map((a) => (
+                          <span key={a.kind} className={`rounded-full px-2 py-0.5 text-xs ${badge[a.severity]}`}>
+                            {a.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">{item.location}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <form action={adjustQuantity.bind(null, item.id, -1)}>
+                        <button aria-label={`Decrease ${item.name}`} className="h-6 w-6 rounded border border-zinc-300 dark:border-zinc-700">−</button>
+                      </form>
+                      <span className="w-6 text-center tabular-nums">{item.quantity}</span>
+                      <form action={adjustQuantity.bind(null, item.id, 1)}>
+                        <button aria-label={`Increase ${item.name}`} className="h-6 w-6 rounded border border-zinc-300 dark:border-zinc-700">+</button>
+                      </form>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">{formatCents(item.unitPriceCents === null ? null : item.unitPriceCents * item.quantity)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-3 text-xs">
+                      <Link href={`/items/${item.id}/edit`} className="text-emerald-700 hover:underline dark:text-emerald-400">Edit</Link>
+                      <form action={deleteItem.bind(null, item.id)}>
+                        <button className="text-red-600 hover:underline">Delete</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </main>
+      )}
+    </main>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
+  return (
+    <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+      <div className="text-xs uppercase text-zinc-500">{label}</div>
+      <div className={`mt-1 text-2xl font-semibold tabular-nums ${tone === "warn" ? "text-amber-600" : ""}`}>{value}</div>
     </div>
   );
 }
