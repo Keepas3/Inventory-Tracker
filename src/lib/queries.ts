@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, like, or } from "drizzle-orm";
 import { db } from "@/db";
-import { items } from "@/db/schema";
+import { itemEvents, items } from "@/db/schema";
 
 export interface ItemFilters {
   q?: string;
@@ -12,7 +12,7 @@ export interface ItemFilters {
 
 export async function listItems({ q, category, location, sort = "name" }: ItemFilters = {}) {
   // Escape LIKE wildcards so user input is matched literally.
-  const term = q?.trim().replace(/[\%_]/g, "\$&");
+  const term = q?.trim().replace(/[\\%_]/g, "\\$&");
   const where = and(
     term ? or(like(items.name, `%${term}%`), like(items.notes, `%${term}%`)) : undefined,
     category ? eq(items.category, category) : undefined,
@@ -20,6 +20,10 @@ export async function listItems({ q, category, location, sort = "name" }: ItemFi
   );
   const order = sort === "newest" ? desc(items.createdAt) : sort === "quantity" ? asc(items.quantity) : asc(items.name);
   return db.select().from(items).where(where).orderBy(order);
+}
+
+export async function listEvents() {
+  return db.select().from(itemEvents);
 }
 
 export async function getItem(id: number) {

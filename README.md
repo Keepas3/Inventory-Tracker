@@ -23,6 +23,13 @@ Copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY`. Without it the 
 - **Ask** (`/ask`): Claude answers questions by calling read-only tools (`search_items`, `items_needing_attention`, `inventory_summary`, ...) against the database, so answers come from real data rather than guesses.
 - **Guardrails:** API key stays server-side, uploads are type/size-checked (and downscaled in the browser), per-IP rate limits cap spend, tools are read-only, item text is treated as data rather than instructions, and refusals/API errors surface as friendly messages. Refusal fallbacks are enabled server-side.
 
+## Insights and weekly digest
+
+- **History log:** every +/−, edit and creation writes an append-only `item_events` row. Taps on an empty item aren't logged, so they can't fake usage.
+- **Restock suggestions** (`src/lib/analytics.ts`, pure and unit-tested): usage rate = units consumed over a 90-day window, with a one-week floor on the observation span so a single early tap doesn't spike the rate. An item is suggested when it's below its alert level or projected to run out within 14 days, sized to cover 30 days.
+- **Spend charts:** by month (using the originally purchased quantity, not what's left) and current stock value by category. Plain accessible CSS bars with the numbers as text, no chart library.
+- **Weekly digest:** `GET /api/cron/digest` is scheduled in `vercel.json` (Mondays 14:00 UTC). It fails closed (401 unless `Authorization: Bearer $CRON_SECRET` matches, compared in constant time), builds a deterministic digest (attention items plus shopping list, with user text HTML-escaped), and emails it via Resend if configured. `?dry=1` returns it without sending, and an empty digest is never sent.
+
 ## Design notes
 
 - **Money is stored as integer cents** to avoid floating-point drift.
@@ -35,5 +42,5 @@ Copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY`. Without it the 
 - [x] **Phase 1: Foundation.** CRUD, search/filter/sort, stats dashboard, quantity controls.
 - [x] **Phase 3 (partial): Alerts.** Low stock, expiring, and warranty badges plus a "needs attention" panel.
 - [x] **Phase 2: AI capture.** Photo/receipt to structured items via Claude vision, with a review-and-confirm step. Natural-language Q&A using tool calls against the DB.
-- [ ] **Phase 3: Notifications.** Scheduled email/push digests, restock suggestions from usage history, spend charts.
+- [x] **Phase 3: Insights and digests.** Quantity history log, restock suggestions from real usage rates, spend charts, and a weekly digest endpoint.
 - [ ] **Phase 4: Ship it.** Auth, a seeded read-only public demo mode, rate-limited AI endpoints, CI (GitHub Actions), and Vercel + Turso deployment.
