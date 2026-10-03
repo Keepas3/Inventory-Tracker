@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canWrite, getAccessPolicy } from "./access";
+import { canWrite, demoRedirectFor, getAccessPolicy } from "./access";
 
 const secret = "s".repeat(32);
 
@@ -32,5 +32,12 @@ describe("canWrite", () => {
     expect(canWrite({ kind: "login" }, false)).toBe(false);
     expect(canWrite({ kind: "demo" }, true)).toBe(false);
     expect(canWrite({ kind: "locked", reason: "" }, true)).toBe(false);
+  });
+});
+
+describe("demoRedirectFor", () => {
+  it("sends write and sign-in pages to the inventory, and leaves the rest alone", () => {
+    for (const p of ["/login", "/items/new", "/items/12/edit"]) expect(demoRedirectFor(p), p).toBe("/inventory");
+    for (const p of ["/", "/inventory", "/insights", "/scan", "/ask", "/api/ai/ask", "/itemsfoo", "/login-help"]) expect(demoRedirectFor(p), p).toBeNull();
   });
 });

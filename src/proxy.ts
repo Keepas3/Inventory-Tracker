@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getAccessPolicy } from "@/lib/access";
+import { demoRedirectFor, getAccessPolicy } from "@/lib/access";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
 /**
@@ -9,7 +9,11 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 export function proxy(request: NextRequest) {
   const policy = getAccessPolicy(process.env);
 
-  if (policy.kind === "demo" || policy.kind === "open") return NextResponse.next();
+  if (policy.kind === "demo") {
+    const to = demoRedirectFor(request.nextUrl.pathname);
+    return to ? NextResponse.redirect(new URL(to, request.url)) : NextResponse.next();
+  }
+  if (policy.kind === "open") return NextResponse.next();
   if (policy.kind === "locked") return new NextResponse(`Server misconfigured. ${policy.reason}`, { status: 503 });
 
   const { pathname, search } = request.nextUrl;

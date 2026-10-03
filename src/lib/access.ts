@@ -35,3 +35,12 @@ export function getAccessPolicy(env: AccessEnv): AccessPolicy {
 
 export const canWrite = (policy: AccessPolicy, hasSession: boolean) =>
   policy.kind === "open" || (policy.kind === "login" && hasSession);
+
+/**
+ * In the public demo there is nothing to sign in to and nothing to edit, so those pages bounce to the
+ * inventory. Done in the proxy so it is a real HTTP redirect: once a page streams (loading.tsx), a
+ * redirect() inside it can only be a client-side meta refresh.
+ */
+export function demoRedirectFor(pathname: string): string | null {
+  return pathname === "/login" || pathname.startsWith("/items/") ? "/inventory" : null;
+}
