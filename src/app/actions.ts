@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { itemEvents, items } from "@/db/schema";
+import { requireWriter } from "@/lib/auth";
 import { itemInputSchema } from "@/lib/inventory";
 
 export interface FormState {
@@ -38,7 +39,9 @@ async function insertWithEvents(rows: ReturnType<typeof toRow>[]) {
   if (events.length) await db.insert(itemEvents).values(events);
 }
 
+// Every mutation starts with requireWriter(): the proxy is only an optimistic gate, and in demo mode it lets everyone in.
 export async function createItem(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireWriter();
   const { data, errors } = parseForm(formData);
   if (!data) return { errors };
   await insertWithEvents([toRow(data)]);
@@ -47,6 +50,7 @@ export async function createItem(_prev: FormState, formData: FormData): Promise<
 }
 
 export async function updateItem(id: number, _prev: FormState, formData: FormData): Promise<FormState> {
+  await requireWriter();
   const { data, errors } = parseForm(formData);
   if (!data) return { errors };
   const [before] = await db.select({ quantity: items.quantity }).from(items).where(eq(items.id, id));
@@ -69,6 +73,7 @@ export interface BulkResult {
 
 /** Saves reviewed AI-extracted rows. Every row goes through the same validation as the manual form. */
 export async function createItems(rows: Record<string, string>[]): Promise<BulkResult> {
+  await requireWriter();
   if (rows.length === 0 || rows.length > 100) return { errors: { 0: "Provide between 1 and 100 rows." } };
 
   const valid: ReturnType<typeof toRow>[] = [];
@@ -87,12 +92,14 @@ export async function createItems(rows: Record<string, string>[]): Promise<BulkR
 }
 
 export async function deleteItem(id: number) {
+  await requireWriter();
   await db.delete(itemEvents).where(eq(itemEvents.itemId, id));
   await db.delete(items).where(eq(items.id, id));
   revalidateAll();
 }
 
 export async function adjustQuantity(id: number, delta: 1 | -1) {
+  await requireWriter();
   const [before] = await db.select({ quantity: items.quantity }).from(items).where(eq(items.id, id));
   if (!before) return;
   // Clamp at zero, and log only what actually changed so a tap on an empty item isn't counted as usage.

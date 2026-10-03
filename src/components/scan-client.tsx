@@ -21,7 +21,7 @@ async function prepareImage(file: File): Promise<File> {
   return blob ? new File([blob], "upload.jpg", { type: "image/jpeg" }) : file;
 }
 
-export function ScanClient({ aiEnabled, locations }: { aiEnabled: boolean; locations: string[] }) {
+export function ScanClient({ aiEnabled, canSave, locations }: { aiEnabled: boolean; canSave: boolean; locations: string[] }) {
   const router = useRouter();
   const [rows, setRows] = useState<CandidateRow[] | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -142,9 +142,13 @@ export function ScanClient({ aiEnabled, locations }: { aiEnabled: boolean; locat
               </table>
             </div>
           )}
-          <button onClick={save} disabled={saving || rows.length === 0} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
-            {saving ? "Saving…" : `Save ${rows.length} item${rows.length === 1 ? "" : "s"}`}
-          </button>
+          {canSave ? (
+            <button onClick={save} disabled={saving || rows.length === 0} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
+              {saving ? "Saving…" : `Save ${rows.length} item${rows.length === 1 ? "" : "s"}`}
+            </button>
+          ) : (
+            <p className="text-sm text-zinc-500">This is a read-only demo, so extracted items aren&apos;t saved.</p>
+          )}
         </section>
       )}
     </div>

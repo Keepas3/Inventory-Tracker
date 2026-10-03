@@ -30,6 +30,15 @@ Copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY`. Without it the 
 - **Spend charts:** by month (using the originally purchased quantity, not what's left) and current stock value by category. Plain accessible CSS bars with the numbers as text, no chart library.
 - **Weekly digest:** `GET /api/cron/digest` is scheduled in `vercel.json` (Mondays 14:00 UTC). It fails closed (401 unless `Authorization: Bearer $CRON_SECRET` matches, compared in constant time), builds a deterministic digest (attention items plus shopping list, with user text HTML-escaped), and emails it via Resend if configured. `?dry=1` returns it without sending, and an empty digest is never sent.
 
+## Security model
+
+- **Two deployment modes** (`APP_MODE`): `private` (default, password login) and `demo` (public, read-only, seeded data). One codebase, one policy function (`src/lib/access.ts`) shared by the proxy and server code, with unit tests.
+- **Defence in depth:** `src/proxy.ts` is an optimistic gate in front of every route, but every server action calls `requireWriter()` and every AI route re-checks access itself. In demo mode I verified a hand-crafted server-action request is rejected and writes nothing.
+- **Fails closed:** a production build without auth config returns 503 everywhere. A typo'd `APP_MODE` does too, instead of silently picking a mode.
+- **Sessions:** stateless HMAC-signed token in an httpOnly, SameSite=Lax, Secure cookie; constant-time password and signature comparison; login throttled to 5 attempts per 15 min; post-login redirect restricted to same-site paths.
+- **AI cost control:** per-client hourly limits (tighter in demo) plus a global daily cap (`AI_DAILY_LIMIT`). These are in-memory, so set a spend limit in the Anthropic console too. See [DEPLOY.md](DEPLOY.md).
+- **Hardening:** security headers (nosniff, frame deny, HSTS, referrer and permissions policies), CI `npm audit`, and a seed script that refuses to wipe a non-local database without confirmation.
+
 ## Design notes
 
 - **Money is stored as integer cents** to avoid floating-point drift.
@@ -43,4 +52,4 @@ Copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY`. Without it the 
 - [x] **Phase 3 (partial): Alerts.** Low stock, expiring, and warranty badges plus a "needs attention" panel.
 - [x] **Phase 2: AI capture.** Photo/receipt to structured items via Claude vision, with a review-and-confirm step. Natural-language Q&A using tool calls against the DB.
 - [x] **Phase 3: Insights and digests.** Quantity history log, restock suggestions from real usage rates, spend charts, and a weekly digest endpoint.
-- [ ] **Phase 4: Ship it.** Auth, a seeded read-only public demo mode, rate-limited AI endpoints, CI (GitHub Actions), and Vercel + Turso deployment.
+- [x] **Phase 4: Ship it.** Auth, a seeded read-only public demo mode, rate-limited AI endpoints, CI (GitHub Actions), security headers, and a Vercel + Turso deploy guide ([DEPLOY.md](DEPLOY.md)). Not yet deployed.

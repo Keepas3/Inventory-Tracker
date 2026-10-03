@@ -6,7 +6,7 @@ import { askLimiter, guard } from "@/lib/ai/route-guard";
 const bodySchema = z.object({ question: z.string().trim().min(1).max(500) });
 
 export async function POST(request: Request) {
-  const blocked = guard(request, askLimiter);
+  const blocked = await guard(request, askLimiter);
   if (blocked) return blocked;
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { adjustQuantity, deleteItem } from "@/app/actions";
+import { getAccess } from "@/lib/auth";
 import { formatCents, getAlerts, totalValueCents } from "@/lib/inventory";
 import { getFacets, listItems, type ItemFilters } from "@/lib/queries";
 
@@ -13,6 +14,7 @@ const badge = {
 };
 
 export default async function Dashboard({ searchParams }: PageProps<"/">) {
+  const { canWrite } = await getAccess();
   const sp = await searchParams;
   const sort = SORTS.find((s) => s === first(sp.sort));
   const filters: ItemFilters = { q: first(sp.q), category: first(sp.category), location: first(sp.location), sort };
@@ -29,9 +31,11 @@ export default async function Dashboard({ searchParams }: PageProps<"/">) {
           <h1 className="text-2xl font-semibold">Stockpile</h1>
           <p className="text-sm text-zinc-500">Everything you own, and what needs attention.</p>
         </div>
-        <Link href="/items/new" className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
-          + Add item
-        </Link>
+        {canWrite && (
+          <Link href="/items/new" className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+            + Add item
+          </Link>
+        )}
       </header>
 
       <section className="mb-8 grid gap-4 sm:grid-cols-3">
@@ -46,9 +50,13 @@ export default async function Dashboard({ searchParams }: PageProps<"/">) {
           <ul className="space-y-1 text-sm">
             {attention.map(({ item, alerts }) => (
               <li key={item.id}>
-                <Link href={`/items/${item.id}/edit`} className="font-medium underline-offset-2 hover:underline">
-                  {item.name}
-                </Link>{" "}
+                {canWrite ? (
+                  <Link href={`/items/${item.id}/edit`} className="font-medium underline-offset-2 hover:underline">
+                    {item.name}
+                  </Link>
+                ) : (
+                  <span className="font-medium">{item.name}</span>
+                )}{" "}
                 — {alerts.map((a) => a.label).join(", ")}
               </li>
             ))}
@@ -110,23 +118,29 @@ export default async function Dashboard({ searchParams }: PageProps<"/">) {
                   <td className="px-4 py-3">{item.location}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <form action={adjustQuantity.bind(null, item.id, -1)}>
-                        <button aria-label={`Decrease ${item.name}`} className="h-6 w-6 rounded border border-zinc-300 dark:border-zinc-700">−</button>
-                      </form>
+                      {canWrite && (
+                        <form action={adjustQuantity.bind(null, item.id, -1)}>
+                          <button aria-label={`Decrease ${item.name}`} className="h-6 w-6 rounded border border-zinc-300 dark:border-zinc-700">−</button>
+                        </form>
+                      )}
                       <span className="w-6 text-center tabular-nums">{item.quantity}</span>
-                      <form action={adjustQuantity.bind(null, item.id, 1)}>
-                        <button aria-label={`Increase ${item.name}`} className="h-6 w-6 rounded border border-zinc-300 dark:border-zinc-700">+</button>
-                      </form>
+                      {canWrite && (
+                        <form action={adjustQuantity.bind(null, item.id, 1)}>
+                          <button aria-label={`Increase ${item.name}`} className="h-6 w-6 rounded border border-zinc-300 dark:border-zinc-700">+</button>
+                        </form>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">{formatCents(item.unitPriceCents === null ? null : item.unitPriceCents * item.quantity)}</td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-end gap-3 text-xs">
-                      <Link href={`/items/${item.id}/edit`} className="text-emerald-700 hover:underline dark:text-emerald-400">Edit</Link>
-                      <form action={deleteItem.bind(null, item.id)}>
-                        <button className="text-red-600 hover:underline">Delete</button>
-                      </form>
-                    </div>
+                    {canWrite && (
+                      <div className="flex justify-end gap-3 text-xs">
+                        <Link href={`/items/${item.id}/edit`} className="text-emerald-700 hover:underline dark:text-emerald-400">Edit</Link>
+                        <form action={deleteItem.bind(null, item.id)}>
+                          <button className="text-red-600 hover:underline">Delete</button>
+                        </form>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

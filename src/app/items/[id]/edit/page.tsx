@@ -1,11 +1,13 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { updateItem } from "@/app/actions";
+import { getAccess } from "@/lib/auth";
 import { ItemForm } from "@/components/item-form";
 import { getFacets, getItem } from "@/lib/queries";
 
 export const metadata = { title: "Edit item — Stockpile" };
 
 export default async function EditItemPage({ params }: PageProps<"/items/[id]/edit">) {
+  if (!(await getAccess()).canWrite) redirect("/");
   const { id } = await params;
   const numericId = Number(id);
   if (!Number.isInteger(numericId)) notFound();

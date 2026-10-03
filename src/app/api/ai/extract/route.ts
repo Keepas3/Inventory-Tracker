@@ -6,7 +6,7 @@ import { extractLimiter, guard } from "@/lib/ai/route-guard";
 const MAX_BYTES = 4 * 1024 * 1024; // the client downsizes first; this is the server-side backstop
 
 export async function POST(request: Request) {
-  const blocked = guard(request, extractLimiter);
+  const blocked = await guard(request, extractLimiter);
   if (blocked) return blocked;
 
   const form = await request.formData().catch(() => null);
