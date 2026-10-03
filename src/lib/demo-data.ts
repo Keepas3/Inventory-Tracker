@@ -71,15 +71,15 @@ const SPECS: Spec[] = [
   { name: "iFixit Pro Tech Toolkit", category: "Tools", location: "Garage workbench", bought: 1, boughtAgo: 301, price: 74.95, warranty: 9000, notes: "Lifetime warranty." },
   { name: "Pinecil soldering iron", category: "Tools", location: "Garage workbench", bought: 1, boughtAgo: 156, price: 26.99, warranty: 209 },
   { name: "Klein MM400 multimeter", category: "Tools", location: "Garage workbench", bought: 1, boughtAgo: 188, price: 39, warranty: 9000 },
-  { name: "Solder spool (63/37, 100 g)", category: "Tools", location: "Garage workbench", bought: 2, boughtAgo: 156, price: 12.5, min: 1, used: [45] },
+  { name: "Solder spool (63/37, 100 g)", category: "Tools", location: "Garage workbench", bought: 3, boughtAgo: 156, price: 12.5, min: 1, used: [45] },
 
   // Supplies
   { name: "Printer paper (500 sheets)", category: "Supplies", location: "Office closet", bought: 6, boughtAgo: 82, price: 8.99, min: 2, used: [66, 50, 33, 19, 5] },
-  { name: "AA batteries (8-pack)", category: "Supplies", location: "Utility drawer", bought: 6, boughtAgo: 120, price: 10.99, min: 2, used: [100, 75, 52, 30] },
+  { name: "AA batteries (8-pack)", category: "Supplies", location: "Utility drawer", bought: 6, boughtAgo: 120, price: 10.99, min: 1, used: [100, 75, 52, 30] },
   { name: "AAA batteries (8-pack)", category: "Supplies", location: "Utility drawer", bought: 4, boughtAgo: 120, price: 9.99, min: 1, used: [58] },
-  { name: "PLA filament 1 kg (Bambu)", category: "Supplies", location: "Garage shelf", bought: 8, boughtAgo: 142, price: 19.99, min: 2, used: [118, 96, 80, 55, 31, 9] },
+  { name: "PLA filament 1 kg (Bambu)", category: "Supplies", location: "Garage shelf", bought: 9, boughtAgo: 142, price: 19.99, min: 2, used: [118, 96, 80, 55, 31, 9] },
   { name: "Velcro cable ties (50-pack)", category: "Supplies", location: "Desk drawer", bought: 3, boughtAgo: 140, price: 8.49, min: 1, used: [20] },
-  { name: "Isopropyl alcohol 99% (500 ml)", category: "Supplies", location: "Garage workbench", bought: 2, boughtAgo: 110, price: 9.49, min: 1, expires: 300, used: [50] },
+  { name: "Isopropyl alcohol 99% (500 ml)", category: "Supplies", location: "Garage workbench", bought: 3, boughtAgo: 110, price: 9.49, min: 1, expires: 300, used: [50] },
   { name: "Arctic MX-6 thermal paste", category: "Supplies", location: "Garage workbench", bought: 2, boughtAgo: 140, price: 7.99, used: [70] },
 
   // Pantry
@@ -87,8 +87,8 @@ const SPECS: Spec[] = [
   { name: "Extra virgin olive oil (1 L)", category: "Pantry", location: "Kitchen pantry", bought: 3, boughtAgo: 95, price: 14.99, min: 1, expires: 9, used: [60, 22] },
   { name: "Coffee filters (100 ct)", category: "Pantry", location: "Kitchen pantry", bought: 3, boughtAgo: 100, price: 4.99, min: 1, used: [82, 55, 18] },
   { name: "Rolled oats (42 oz)", category: "Pantry", location: "Kitchen pantry", bought: 4, boughtAgo: 100, price: 6.49, min: 1, expires: 120, used: [70, 35] },
-  { name: "Green tea bags (100 ct)", category: "Pantry", location: "Kitchen pantry", bought: 3, boughtAgo: 110, price: 9.99, min: 1, expires: 200, used: [80, 30] },
-  { name: "Whey protein (2 lb)", category: "Pantry", location: "Kitchen pantry", bought: 3, boughtAgo: 130, price: 32.99, min: 1, expires: 60, used: [95, 40] },
+  { name: "Green tea bags (100 ct)", category: "Pantry", location: "Kitchen pantry", bought: 4, boughtAgo: 110, price: 9.99, min: 1, expires: 200, used: [80, 30] },
+  { name: "Whey protein (2 lb)", category: "Pantry", location: "Kitchen pantry", bought: 4, boughtAgo: 130, price: 32.99, min: 1, expires: 60, used: [95, 40] },
 
   // Health
   { name: "Vitamin D3 (120 softgels)", category: "Health", location: "Bathroom cabinet", bought: 2, boughtAgo: 150, price: 14.99, min: 1, expires: -6, used: [85] },

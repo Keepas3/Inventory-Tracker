@@ -1,7 +1,7 @@
 import { AskClient } from "@/components/ask-client";
 import { isAiConfigured } from "@/lib/ai/config";
 
-export const metadata = { title: "Ask — Stockpile" };
+export const metadata = { title: "Ask" };
 // Reads runtime env (is the API key set?), so it must not be prerendered at build time.
 export const dynamic = "force-dynamic";
 

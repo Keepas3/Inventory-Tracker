@@ -1,8 +1,13 @@
+import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { logout } from "@/app/login/actions";
 import { getAccess } from "@/lib/auth";
+import { Logo } from "./logo";
+import { NavLinks, type NavItem } from "./nav-links";
+import { ThemeToggle } from "./theme-toggle";
+import { Badge } from "./ui";
 
-const links = [
+const links: NavItem[] = [
   { href: "/", label: "Inventory" },
   { href: "/insights", label: "Insights" },
   { href: "/scan", label: "Scan" },
@@ -13,28 +18,29 @@ export async function Nav() {
   const { policy, session } = await getAccess();
   const loggedOut = policy.kind === "login" && !session;
   return (
-    <nav className="border-b border-zinc-200 dark:border-zinc-800">
-      <div className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3 text-sm">
-        <Link href="/" className="font-semibold">
-          Stockpile
+    <header className="sticky top-0 z-40 border-b border-line bg-background/85 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4">
+        <Link href="/" aria-label="Stockpile home" className="rounded-lg">
+          <Logo />
         </Link>
-        {!loggedOut &&
-          links.map((l) => (
-            <Link key={l.href} href={l.href} className="text-zinc-600 hover:text-foreground dark:text-zinc-400">
-              {l.label}
-            </Link>
-          ))}
-        <div className="ml-auto flex items-center gap-3">
-          {policy.kind === "demo" && (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-300">Demo · read-only</span>
-          )}
+        {!loggedOut && <NavLinks links={links} variant="inline" />}
+        <div className="ml-auto flex items-center gap-1">
+          {policy.kind === "demo" && <Badge tone="warn">Demo · read-only</Badge>}
+          <ThemeToggle />
           {policy.kind === "login" && session && (
             <form action={logout}>
-              <button className="text-zinc-600 hover:text-foreground dark:text-zinc-400">Sign out</button>
+              <button
+                aria-label="Sign out"
+                title="Sign out"
+                className="flex size-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-foreground"
+              >
+                <LogOut className="size-4" aria-hidden />
+              </button>
             </form>
           )}
         </div>
       </div>
-    </nav>
+      {!loggedOut && <NavLinks links={links} variant="tabs" />}
+    </header>
   );
 }

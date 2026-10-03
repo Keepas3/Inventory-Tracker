@@ -1,26 +1,85 @@
 @import "tailwindcss";
 
+/* `dark:` follows the data-theme attribute (set before first paint by the inline script in layout.tsx),
+   so the theme toggle and every existing `dark:` class agree. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Semantic tokens. Components use these (bg-surface, text-muted, ...) instead of raw palette colors. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #fafaf9;
+  --foreground: #18181b;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --line: #e4e4e7;
+  --muted: #52525b; /* 7.7:1 on white */
+  --brand: #047857; /* white text on this is 5.5:1 */
+  --brand-hover: #065f46;
+  --brand-text: #047857; /* accent text on light surfaces */
+  --brand-soft: #d1fae5;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --warn: #92400e;
+  --warn-soft: #fef3c7;
+  --ring: #059669;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --surface: #111113;
+  --surface-2: #18181b;
+  --line: #27272a;
+  --muted: #a1a1aa; /* 7.8:1 on #111113 */
+  --brand: #059669;
+  --brand-hover: #10b981;
+  --brand-text: #34d399;
+  --brand-soft: #052e22;
+  --danger: #f87171;
+  --danger-soft: #3f0d0d;
+  --warn: #fbbf24;
+  --warn-soft: #3a2205;
+  --ring: #34d399;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-text: var(--brand-text);
+  --color-brand-soft: var(--brand-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* One consistent keyboard focus indicator everywhere. */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

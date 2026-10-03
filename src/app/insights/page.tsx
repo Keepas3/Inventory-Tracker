@@ -2,7 +2,7 @@ import { restockSuggestions, spendByMonth, valueByCategory, type SpendRow } from
 import { formatCents } from "@/lib/inventory";
 import { listEvents, listItems } from "@/lib/queries";
 
-export const metadata = { title: "Insights — Stockpile" };
+export const metadata = { title: "Insights" };
 export const dynamic = "force-dynamic";
 
 const monthLabel = (ym: string) => new Date(`${ym}-01T00:00:00Z`).toLocaleString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" });

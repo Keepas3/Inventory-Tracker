@@ -3,7 +3,7 @@ import { isAiConfigured } from "@/lib/ai/config";
 import { getAccess } from "@/lib/auth";
 import { getFacets } from "@/lib/queries";
 
-export const metadata = { title: "Scan — Stockpile" };
+export const metadata = { title: "Scan" };
 export const dynamic = "force-dynamic";
 
 export default async function ScanPage() {

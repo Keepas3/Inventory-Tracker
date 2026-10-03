@@ -1,10 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { updateItem } from "@/app/actions";
-import { getAccess } from "@/lib/auth";
 import { ItemForm } from "@/components/item-form";
+import { Card } from "@/components/ui";
+import { getAccess } from "@/lib/auth";
 import { getFacets, getItem } from "@/lib/queries";
 
-export const metadata = { title: "Edit item — Stockpile" };
+export const metadata = { title: "Edit item" };
 
 export default async function EditItemPage({ params }: PageProps<"/items/[id]/edit">) {
   if (!(await getAccess()).canWrite) redirect("/");
@@ -17,8 +18,11 @@ export default async function EditItemPage({ params }: PageProps<"/items/[id]/ed
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-semibold">Edit item</h1>
-      <ItemForm action={updateItem.bind(null, item.id)} item={item} categories={categories} locations={locations} />
+      <h1 className="text-2xl font-semibold tracking-tight">Edit item</h1>
+      <p className="mb-6 mt-1 text-sm text-muted">{item.name}</p>
+      <Card className="p-5 sm:p-6">
+        <ItemForm action={updateItem.bind(null, item.id)} item={item} categories={categories} locations={locations} />
+      </Card>
     </main>
   );
 }
