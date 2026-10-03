@@ -50,15 +50,16 @@ export function Badge({ tone = "neutral", className = "", ...props }: ComponentP
 
 export function Stat({ label, value, icon: Icon, tone }: { label: string; value: string; icon?: LucideIcon; tone?: "warn" }) {
   return (
-    <Card className="flex items-center gap-4 p-4">
+    <Card className="flex items-center gap-4 p-3 sm:p-4">
       {Icon && (
-        <span className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${tone === "warn" ? tones.warn : tones.brand}`}>
+        // Decorative, so it yields to the number on phones where two stats share a row.
+        <span className={`hidden size-10 shrink-0 items-center justify-center rounded-lg sm:flex ${tone === "warn" ? tones.warn : tones.brand}`}>
           <Icon className="size-5" aria-hidden />
         </span>
       )}
       <div className="min-w-0">
         <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
-        <div className={`truncate text-2xl font-semibold tabular-nums ${tone === "warn" ? "text-warn" : ""}`}>{value}</div>
+        <div className={`text-xl font-semibold tabular-nums sm:text-2xl ${tone === "warn" ? "text-warn" : ""}`}>{value}</div>
       </div>
     </Card>
   );

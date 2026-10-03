@@ -31,7 +31,8 @@ Import the GitHub repo, then set these environment variables:
 | `DATABASE_URL`, `DATABASE_AUTH_TOKEN` | from step 1 |
 | `ANTHROPIC_API_KEY` | a key **dedicated to this deployment** |
 | `AI_DAILY_LIMIT` | e.g. `100`, the global ceiling on AI calls per day |
-| `CRON_SECRET` | `openssl rand -hex 32` (the weekly digest endpoint refuses everything without it) |
+| `CRON_SECRET` | `openssl rand -hex 32` (both cron endpoints refuse everything without it) |
+| `NEXT_PUBLIC_AUTHOR_NAME`, `NEXT_PUBLIC_PORTFOLIO_URL` | optional, shows a "built by" credit in the footer |
 
 Demo mode is read-only for everyone (writes are rejected server-side, not just hidden). Ask and Scan stay available with tight per-visitor limits; scanned items are shown but never saved.
 
