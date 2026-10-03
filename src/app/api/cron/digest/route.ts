@@ -1,17 +1,9 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { isAuthorizedCron } from "@/lib/cron-auth";
 import { buildDigest } from "@/lib/digest";
 import { listEvents, listItems } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
-
-function authorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false; // fail closed: an unset secret must never mean "open"
-  const given = Buffer.from(request.headers.get("authorization") ?? "");
-  const expected = Buffer.from(`Bearer ${secret}`);
-  return given.length === expected.length && timingSafeEqual(given, expected);
-}
 
 async function sendEmail(subject: string, html: string, text: string) {
   const { RESEND_API_KEY, DIGEST_TO, DIGEST_FROM } = process.env;
@@ -26,7 +18,7 @@ async function sendEmail(subject: string, html: string, text: string) {
 
 /** Invoked weekly by the scheduler (see vercel.json). `?dry=1` builds the digest without sending. */
 export async function GET(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAuthorizedCron(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [items, events] = await Promise.all([listItems(), listEvents()]);
   const digest = buildDigest(items, events);

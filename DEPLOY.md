@@ -35,6 +35,8 @@ Import the GitHub repo, then set these environment variables:
 
 Demo mode is read-only for everyone (writes are rejected server-side, not just hidden). Ask and Scan stay available with tight per-visitor limits; scanned items are shown but never saved.
 
+**Daily refresh:** `vercel.json` schedules `/api/cron/refresh-demo` (06:00 UTC). It regenerates the whole demo dataset relative to today, so "expires in 12 days" and the usage charts never go stale. It is **destructive**, so it only runs when `APP_MODE=demo` (anything else gets a 403) and needs `CRON_SECRET`. On a private deployment the cron simply receives that 403 and does nothing. Never set `APP_MODE=demo` on a deployment that holds real data.
+
 ## 3. Optional: private deployment (your real data)
 
 A second Vercel project from the same repo, with its own Turso DB:
