@@ -1,0 +1,4 @@
+/** Placeholder block for loading states. Decorative, so hidden from assistive tech. */
+export function Skeleton({ className = "" }: { className?: string }) {
+  return <div aria-hidden className={`animate-pulse rounded-lg bg-surface-2 ${className}`} />;
+}
