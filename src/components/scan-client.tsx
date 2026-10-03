@@ -69,7 +69,7 @@ export function ScanClient({ aiEnabled, canSave, locations }: { aiEnabled: boole
         setRowErrors(result.errors);
         return;
       }
-      router.push("/inventory");
+      router.push("/inventory?toast=scanned");
     });
   }
 

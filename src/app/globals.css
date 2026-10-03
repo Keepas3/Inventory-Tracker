@@ -19,6 +19,7 @@
   --brand-soft: #d1fae5;
   --danger: #b91c1c;
   --danger-soft: #fee2e2;
+  --danger-solid: #b91c1c; /* white text on this is 6.5:1 */
   --warn: #92400e;
   --warn-soft: #fef3c7;
   --ring: #059669;
@@ -38,6 +39,7 @@
   --brand-soft: #052e22;
   --danger: #f87171;
   --danger-soft: #3f0d0d;
+  --danger-solid: #dc2626; /* white text on this is 4.8:1 */
   --warn: #fbbf24;
   --warn-soft: #3a2205;
   --ring: #34d399;
@@ -56,6 +58,7 @@
   --color-brand-soft: var(--brand-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-danger-solid: var(--danger-solid);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-ring: var(--ring);

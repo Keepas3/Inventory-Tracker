@@ -4,7 +4,7 @@ import type { ComponentProps, ReactNode } from "react";
 
 /* Shared building blocks so every page uses the same buttons, cards and states. Pure markup (no client JS). */
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "destructive";
 type Size = "sm" | "md" | "lg";
 
 const base = "inline-flex items-center justify-center gap-2 rounded-lg font-medium whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50";
@@ -13,6 +13,7 @@ const variants: Record<Variant, string> = {
   secondary: "border border-line bg-surface text-foreground hover:bg-surface-2",
   ghost: "text-muted hover:bg-surface-2 hover:text-foreground",
   danger: "border border-line bg-surface text-danger hover:bg-danger-soft",
+  destructive: "bg-danger-solid text-white hover:opacity-90",
 };
 const sizes: Record<Size, string> = { sm: "h-8 px-3 text-xs", md: "h-10 px-4 text-sm", lg: "h-11 px-6 text-base" };
 

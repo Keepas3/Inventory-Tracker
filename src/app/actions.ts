@@ -47,7 +47,7 @@ export async function createItem(_prev: FormState, formData: FormData): Promise<
   if (!data) return { errors };
   await insertWithEvents([toRow(data)]);
   revalidateAll();
-  redirect("/inventory");
+  redirect("/inventory?toast=added");
 }
 
 export async function updateItem(id: number, _prev: FormState, formData: FormData): Promise<FormState> {
@@ -63,7 +63,7 @@ export async function updateItem(id: number, _prev: FormState, formData: FormDat
     await db.insert(itemEvents).values({ itemId: id, kind: "edit", delta: data.quantity - before.quantity });
   }
   revalidateAll();
-  redirect("/inventory");
+  redirect("/inventory?toast=saved");
 }
 
 export interface BulkResult {
