@@ -29,6 +29,7 @@ function toRow(d: NonNullable<ReturnType<typeof parseForm>["data"]>) {
 
 function revalidateAll() {
   revalidatePath("/");
+  revalidatePath("/inventory");
   revalidatePath("/insights");
 }
 
@@ -46,7 +47,7 @@ export async function createItem(_prev: FormState, formData: FormData): Promise<
   if (!data) return { errors };
   await insertWithEvents([toRow(data)]);
   revalidateAll();
-  redirect("/");
+  redirect("/inventory");
 }
 
 export async function updateItem(id: number, _prev: FormState, formData: FormData): Promise<FormState> {
@@ -62,7 +63,7 @@ export async function updateItem(id: number, _prev: FormState, formData: FormDat
     await db.insert(itemEvents).values({ itemId: id, kind: "edit", delta: data.quantity - before.quantity });
   }
   revalidateAll();
-  redirect("/");
+  redirect("/inventory");
 }
 
 export interface BulkResult {

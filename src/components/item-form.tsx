@@ -86,7 +86,7 @@ export function ItemForm({ action, item, categories, locations }: { action: Acti
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : item ? "Save changes" : "Add item"}
         </Button>
-        <LinkButton href="/" variant="secondary">
+        <LinkButton href="/inventory" variant="secondary">
           Cancel
         </LinkButton>
       </div>

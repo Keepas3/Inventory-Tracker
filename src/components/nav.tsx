@@ -8,7 +8,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { Badge } from "./ui";
 
 const links: NavItem[] = [
-  { href: "/", label: "Inventory" },
+  { href: "/inventory", label: "Inventory" },
   { href: "/insights", label: "Insights" },
   { href: "/scan", label: "Scan" },
   { href: "/ask", label: "Ask" },

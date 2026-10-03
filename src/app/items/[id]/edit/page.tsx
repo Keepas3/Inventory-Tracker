@@ -8,7 +8,7 @@ import { getFacets, getItem } from "@/lib/queries";
 export const metadata = { title: "Edit item" };
 
 export default async function EditItemPage({ params }: PageProps<"/items/[id]/edit">) {
-  if (!(await getAccess()).canWrite) redirect("/");
+  if (!(await getAccess()).canWrite) redirect("/inventory");
   const { id } = await params;
   const numericId = Number(id);
   if (!Number.isInteger(numericId)) notFound();
