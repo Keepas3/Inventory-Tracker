@@ -45,6 +45,31 @@ export async function updateItem(id: number, _prev: FormState, formData: FormDat
   redirect("/");
 }
 
+export interface BulkResult {
+  saved?: number;
+  /** Row index → first error message, so the review table can highlight bad rows. */
+  errors?: Record<number, string>;
+}
+
+/** Saves reviewed AI-extracted rows. Every row goes through the same validation as the manual form. */
+export async function createItems(rows: Record<string, string>[]): Promise<BulkResult> {
+  if (rows.length === 0 || rows.length > 100) return { errors: { 0: "Provide between 1 and 100 rows." } };
+
+  const valid: ReturnType<typeof toRow>[] = [];
+  const errors: Record<number, string> = {};
+  rows.forEach((row, i) => {
+    const parsed = itemInputSchema.safeParse(row);
+    if (parsed.success) valid.push(toRow(parsed.data));
+    else errors[i] = parsed.error.issues[0]?.message ?? "Invalid row";
+  });
+  // All-or-nothing, so a partially saved receipt can't be saved twice by accident.
+  if (Object.keys(errors).length > 0) return { errors };
+
+  await db.insert(items).values(valid);
+  revalidatePath("/");
+  return { saved: valid.length };
+}
+
 export async function deleteItem(id: number) {
   await db.delete(items).where(eq(items.id, id));
   revalidatePath("/");
