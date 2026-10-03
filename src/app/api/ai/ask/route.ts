@@ -3,7 +3,10 @@ import { z } from "zod";
 import { askInventory } from "@/lib/ai/ask";
 import { askLimiter, guard } from "@/lib/ai/route-guard";
 
-const bodySchema = z.object({ question: z.string().trim().min(1).max(500) });
+// A tool-using answer makes several model calls; allow up to 60s on serverless platforms.
+export const maxDuration = 60;
+
+const bodySchema =z.object({ question: z.string().trim().min(1).max(500) });
 
 export async function POST(request: Request) {
   const blocked = await guard(request, askLimiter);

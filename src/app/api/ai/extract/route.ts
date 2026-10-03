@@ -3,7 +3,10 @@ import { toCandidateRows } from "@/lib/ai/candidates";
 import { ACCEPTED_IMAGE_TYPES, extractItemsFromImage, type AcceptedImageType } from "@/lib/ai/extract";
 import { extractLimiter, guard } from "@/lib/ai/route-guard";
 
-const MAX_BYTES = 4 * 1024 * 1024; // the client downsizes first; this is the server-side backstop
+// Vision calls can outlast a serverless platform's default timeout; 60s fits Vercel's Hobby limit.
+export const maxDuration = 60;
+
+const MAX_BYTES =4 * 1024 * 1024; // the client downsizes first; this is the server-side backstop
 
 export async function POST(request: Request) {
   const blocked = await guard(request, extractLimiter);
