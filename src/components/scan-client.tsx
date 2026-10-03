@@ -1,12 +1,13 @@
 "use client";
 
+import { FileImage, Loader2, ScanLine, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition, type ReactNode } from "react";
 import { createItems } from "@/app/actions";
 import type { CandidateRow } from "@/lib/ai/candidates";
+import { Button, buttonClass, Card, inputClass } from "./ui";
 
 const MAX_DIMENSION = 1600;
-const cell = "w-full rounded border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-700";
 
 /** Downscale big phone photos before upload: faster, cheaper, and under the server's size cap. */
 async function prepareImage(file: File): Promise<File> {
@@ -21,8 +22,28 @@ async function prepareImage(file: File): Promise<File> {
   return blob ? new File([blob], "upload.jpg", { type: "image/jpeg" }) : file;
 }
 
-export function ScanClient({ aiEnabled, canSave, locations }: { aiEnabled: boolean; canSave: boolean; locations: string[] }) {
+// Module-level so inputs keep their identity (and typed values) across renders.
+function Field({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1 block text-xs font-medium text-muted">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+interface Props {
+  aiEnabled: boolean;
+  canSave: boolean;
+  /** The owner (not a demo visitor) gets setup instructions when AI isn't configured. */
+  showSetupHint: boolean;
+  locations: string[];
+}
+
+export function ScanClient({ aiEnabled, canSave, showSetupHint, locations }: Props) {
   const router = useRouter();
+  const locationListId = useId();
+  const [location, setLocation] = useState("");
   const [rows, setRows] = useState<CandidateRow[] | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
@@ -30,10 +51,7 @@ export function ScanClient({ aiEnabled, canSave, locations }: { aiEnabled: boole
   const [scanning, setScanning] = useState(false);
   const [saving, startSaving] = useTransition();
 
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const input = e.target;
-    const file = input.files?.[0];
-    if (!file) return;
+  async function scan(file: File) {
     setError(null);
     setRows(null);
     setRowErrors({});
@@ -41,9 +59,7 @@ export function ScanClient({ aiEnabled, canSave, locations }: { aiEnabled: boole
     try {
       const body = new FormData();
       body.set("image", await prepareImage(file));
-      const location = (document.getElementById("default-location") as HTMLInputElement | null)?.value;
-      if (location) body.set("location", location);
-
+      if (location.trim()) body.set("location", location.trim());
       const res = await fetch("/api/ai/extract", { method: "POST", body });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
@@ -53,7 +69,22 @@ export function ScanClient({ aiEnabled, canSave, locations }: { aiEnabled: boole
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setScanning(false);
-      input.value = "";
+    }
+  }
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    const file = input.files?.[0];
+    if (file) await scan(file);
+    input.value = "";
+  }
+
+  async function useSample() {
+    try {
+      const blob = await (await fetch("/samples/receipt.png")).blob();
+      await scan(new File([blob], "sample-receipt.png", { type: "image/png" }));
+    } catch {
+      setError("Couldn't load the sample receipt.");
     }
   }
 
@@ -73,82 +104,143 @@ export function ScanClient({ aiEnabled, canSave, locations }: { aiEnabled: boole
     });
   }
 
+  const disabled = !aiEnabled || scanning;
+  const uploadClass = buttonClass(
+    "primary",
+    "md",
+    `cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring ${disabled ? "pointer-events-none opacity-50" : ""}`,
+  );
+
   return (
     <div className="space-y-6">
       {!aiEnabled && (
-        <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950/30">
-          AI isn&apos;t configured on this server. Add <code>ANTHROPIC_API_KEY</code> to <code>.env.local</code> and restart.
+        <p role="status" className="rounded-lg bg-warn-soft px-4 py-3 text-sm text-warn">
+          {showSetupHint ? (
+            <>
+              AI isn&apos;t configured on this server. Add <code>ANTHROPIC_API_KEY</code> to <code>.env.local</code> and restart.
+            </>
+          ) : (
+            "AI features are paused on this deployment right now. Check back soon."
+          )}
+        </p>
+      )}
+      {!canSave && aiEnabled && (
+        <p role="note" className="rounded-lg bg-brand-soft px-4 py-3 text-sm text-brand-text">
+          This is a read-only demo. Scanning works and you can review the result, but nothing is saved.
         </p>
       )}
 
-      <div className="flex flex-wrap items-end gap-4">
-        <div>
-          <label htmlFor="default-location" className="mb-1 block text-sm font-medium">
-            Where is this stored?
-          </label>
-          <input id="default-location" list="scan-locations" placeholder="e.g. Office closet" className={`${cell} w-56`} />
-          <datalist id="scan-locations">{locations.map((l) => <option key={l} value={l} />)}</datalist>
+      <Card className="p-5">
+        <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+          <Field label="Where is it stored? (optional)">
+            <input value={location} onChange={(e) => setLocation(e.target.value)} list={locationListId} placeholder="e.g. Office closet" className={inputClass} />
+            <datalist id={locationListId}>
+              {locations.map((l) => (
+                <option key={l} value={l} />
+              ))}
+            </datalist>
+          </Field>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <label className={uploadClass}>
+              <ScanLine className="size-4" aria-hidden /> Choose photo or receipt
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" onChange={onFile} disabled={disabled} className="sr-only" />
+            </label>
+            <Button type="button" variant="secondary" onClick={useSample} disabled={disabled}>
+              <FileImage className="size-4" aria-hidden /> Try a sample receipt
+            </Button>
+          </div>
         </div>
-        <label className={`cursor-pointer rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 ${!aiEnabled || scanning ? "pointer-events-none opacity-50" : ""}`}>
-          {scanning ? "Reading image…" : "Choose photo or receipt"}
-          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" onChange={onFile} disabled={!aiEnabled || scanning} className="sr-only" />
-        </label>
-      </div>
-
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        {scanning && (
+          <p role="status" className="mt-4 flex items-center gap-2 text-sm text-muted">
+            <Loader2 className="size-4 animate-spin" aria-hidden /> Reading the image. This usually takes a few seconds.
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="mt-4 text-sm text-danger">
+            {error}
+          </p>
+        )}
+      </Card>
 
       {rows && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Review before saving</h2>
-          <p className="text-sm text-zinc-500">The AI can misread things. Fix anything wrong, remove rows you don&apos;t want, then save.</p>
+        <section aria-labelledby="review" className="space-y-4">
+          <div>
+            <h2 id="review" className="text-lg font-semibold">
+              Review before saving
+            </h2>
+            <p className="text-sm text-muted">The AI can misread things. Fix anything wrong, remove rows you don&apos;t want, then save.</p>
+          </div>
+
           {warnings.length > 0 && (
-            <ul className="list-disc rounded-md bg-amber-50 p-3 pl-7 text-sm dark:bg-amber-950/30">
-              {warnings.map((w, i) => <li key={i}>{w}</li>)}
+            <ul className="list-disc rounded-lg bg-warn-soft py-3 pl-8 pr-4 text-sm text-warn">
+              {warnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
             </ul>
           )}
+
           {rows.length === 0 ? (
-            <p className="text-sm text-zinc-500">No items left. Choose another image.</p>
+            <p className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-muted">No items left. Choose another image.</p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
-                  <tr>
-                    <th className="px-2 py-2">Name</th>
-                    <th className="px-2 py-2">Category</th>
-                    <th className="px-2 py-2">Location</th>
-                    <th className="w-20 px-2 py-2">Qty</th>
-                    <th className="w-24 px-2 py-2">Unit $</th>
-                    <th className="w-36 px-2 py-2">Purchased</th>
-                    <th className="px-2 py-2" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {rows.map((r, i) => (
-                    <tr key={i} className={rowErrors[i] ? "bg-red-50 dark:bg-red-950/20" : undefined}>
-                      <td className="px-2 py-2">
-                        <input aria-label="Name" value={r.name} onChange={(e) => update(i, "name", e.target.value)} className={cell} />
-                        {r.notes && <div className="mt-1 text-xs text-zinc-500">{r.notes}</div>}
-                        {rowErrors[i] && <div className="mt-1 text-xs text-red-600">{rowErrors[i]}</div>}
-                      </td>
-                      <td className="px-2 py-2"><input aria-label="Category" value={r.category} onChange={(e) => update(i, "category", e.target.value)} className={cell} /></td>
-                      <td className="px-2 py-2"><input aria-label="Location" value={r.location} onChange={(e) => update(i, "location", e.target.value)} className={cell} /></td>
-                      <td className="px-2 py-2"><input aria-label="Quantity" type="number" min={0} value={r.quantity} onChange={(e) => update(i, "quantity", e.target.value)} className={cell} /></td>
-                      <td className="px-2 py-2"><input aria-label="Unit price" type="number" step="0.01" min={0} value={r.unitPrice} onChange={(e) => update(i, "unitPrice", e.target.value)} className={cell} /></td>
-                      <td className="px-2 py-2"><input aria-label="Purchase date" type="date" value={r.purchaseDate} onChange={(e) => update(i, "purchaseDate", e.target.value)} className={cell} /></td>
-                      <td className="px-2 py-2"><button onClick={() => remove(i)} className="text-xs text-red-600 hover:underline">Remove</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ul className="space-y-3">
+              {rows.map((r, i) => (
+                <li key={i}>
+                  <Card className={`p-4 ${rowErrors[i] ? "border-danger" : ""}`}>
+                    <div className="mb-3 flex items-start gap-3">
+                      <Field label="Name" className="flex-1">
+                        <input value={r.name} onChange={(e) => update(i, "name", e.target.value)} className={inputClass} />
+                      </Field>
+                      <button
+                        type="button"
+                        onClick={() => remove(i)}
+                        aria-label={`Remove ${r.name || "this row"}`}
+                        title="Remove"
+                        className="mt-5 flex size-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-danger-soft hover:text-danger"
+                      >
+                        <Trash2 className="size-4" aria-hidden />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                      <Field label="Category" className="lg:col-span-2">
+                        <input value={r.category} onChange={(e) => update(i, "category", e.target.value)} className={inputClass} />
+                      </Field>
+                      <Field label="Location" className="lg:col-span-2">
+                        <input value={r.location} onChange={(e) => update(i, "location", e.target.value)} className={inputClass} />
+                      </Field>
+                      <Field label="Quantity">
+                        <input type="number" min={0} value={r.quantity} onChange={(e) => update(i, "quantity", e.target.value)} className={inputClass} />
+                      </Field>
+                      <Field label="Unit price ($)">
+                        <input type="number" step="0.01" min={0} value={r.unitPrice} onChange={(e) => update(i, "unitPrice", e.target.value)} className={inputClass} />
+                      </Field>
+                      <Field label="Purchased" className="col-span-2 sm:col-span-1 lg:col-span-2">
+                        <input type="date" value={r.purchaseDate} onChange={(e) => update(i, "purchaseDate", e.target.value)} className={inputClass} />
+                      </Field>
+                    </div>
+                    {r.notes && <p className="mt-3 text-xs text-muted">Note from the AI: {r.notes}</p>}
+                    {rowErrors[i] && (
+                      <p role="alert" className="mt-2 text-xs text-danger">
+                        {rowErrors[i]}
+                      </p>
+                    )}
+                  </Card>
+                </li>
+              ))}
+            </ul>
           )}
-          {canSave ? (
-            <button onClick={save} disabled={saving || rows.length === 0} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
-              {saving ? "Saving…" : `Save ${rows.length} item${rows.length === 1 ? "" : "s"}`}
-            </button>
-          ) : (
-            <p className="text-sm text-zinc-500">This is a read-only demo, so extracted items aren&apos;t saved.</p>
-          )}
+
+          <div className="flex flex-wrap items-center gap-3">
+            {canSave ? (
+              <Button onClick={save} disabled={saving || rows.length === 0}>
+                {saving ? "Saving…" : `Save ${rows.length} item${rows.length === 1 ? "" : "s"}`}
+              </Button>
+            ) : (
+              <p className="text-sm text-muted">Read-only demo: these items aren&apos;t saved.</p>
+            )}
+            <Button variant="ghost" onClick={() => setRows(null)}>
+              Discard
+            </Button>
+          </div>
         </section>
       )}
     </div>

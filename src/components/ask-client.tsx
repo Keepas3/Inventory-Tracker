@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { SendHorizontal } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import { Button, Card, inputClass } from "./ui";
 
-const EXAMPLES = ["What needs attention this month?", "Do I have a spare HDMI cable?", "What's my total electronics value?", "What's in the home lab?"];
+const EXAMPLES = ["What needs attention this month?", "Do I have a spare HDMI cable?", "What's my total value in Home lab gear?", "What should I restock soon?"];
 
 interface Turn {
   question: string;
@@ -10,10 +13,32 @@ interface Turn {
   error?: string;
 }
 
-export function AskClient({ aiEnabled }: { aiEnabled: boolean }) {
+function TypingDots() {
+  return (
+    <span role="status" aria-label="Checking your inventory" className="inline-flex items-center gap-1 py-1">
+      {[0, 150, 300].map((delay) => (
+        <span key={delay} className="size-1.5 animate-bounce rounded-full bg-muted" style={{ animationDelay: `${delay}ms` }} />
+      ))}
+    </span>
+  );
+}
+
+interface Props {
+  aiEnabled: boolean;
+  /** The owner (not a demo visitor) gets setup instructions when AI isn't configured. */
+  showSetupHint: boolean;
+}
+
+export function AskClient({ aiEnabled, showSetupHint }: Props) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
+  const end = useRef<HTMLDivElement>(null);
+
+  // Keep the newest message in view as answers arrive.
+  useEffect(() => {
+    if (turns.length > 0) end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [turns]);
 
   async function ask(q: string) {
     const text = q.trim();
@@ -27,7 +52,7 @@ export function AskClient({ aiEnabled }: { aiEnabled: boolean }) {
       const json = await res.json();
       patch = res.ok ? { answer: json.answer } : { error: json.error ?? "Something went wrong." };
     } catch {
-      patch = { error: "Couldn't reach the server." };
+      patch = { error: "Couldn't reach the server. Check your connection and try again." };
     }
     setTurns((t) => t.map((turn, i) => (i === t.length - 1 ? { ...turn, ...patch } : turn)));
     setBusy(false);
@@ -36,37 +61,81 @@ export function AskClient({ aiEnabled }: { aiEnabled: boolean }) {
   return (
     <div className="space-y-6">
       {!aiEnabled && (
-        <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950/30">
-          AI isn&apos;t configured on this server. Add <code>ANTHROPIC_API_KEY</code> to <code>.env.local</code> and restart.
+        <p role="status" className="rounded-lg bg-warn-soft px-4 py-3 text-sm text-warn">
+          {showSetupHint ? (
+            <>
+              AI isn&apos;t configured on this server. Add <code>ANTHROPIC_API_KEY</code> to <code>.env.local</code> and restart.
+            </>
+          ) : (
+            "AI features are paused on this deployment right now. Check back soon."
+          )}
         </p>
       )}
 
-      <div className="space-y-4" aria-live="polite">
+      <div className="space-y-5" aria-live="polite">
         {turns.map((t, i) => (
           <div key={i} className="space-y-2">
-            <p className="ml-auto w-fit max-w-[85%] rounded-lg bg-emerald-600 px-3 py-2 text-sm text-white">{t.question}</p>
-            <div className="max-w-[85%] whitespace-pre-wrap rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800">
-              {t.answer ?? (t.error ? <span className="text-red-600">{t.error}</span> : <span className="text-zinc-500">Checking your inventory…</span>)}
-            </div>
+            <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-brand px-4 py-2 text-sm text-white">{t.question}</p>
+            <Card className="max-w-[92%] px-4 py-3 text-sm">
+              {t.answer ? (
+                <div className="space-y-2 leading-relaxed [&_li]:my-0.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5">
+                  <ReactMarkdown>{t.answer}</ReactMarkdown>
+                </div>
+              ) : t.error ? (
+                <span role="alert" className="text-danger">
+                  {t.error}
+                </span>
+              ) : (
+                <TypingDots />
+              )}
+            </Card>
           </div>
         ))}
+        <div ref={end} />
       </div>
 
       {turns.length === 0 && (
-        <div className="flex flex-wrap gap-2">
-          {EXAMPLES.map((e) => (
-            <button key={e} onClick={() => ask(e)} disabled={!aiEnabled || busy} className="rounded-full border border-zinc-300 px-3 py-1 text-xs hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900">
-              {e}
-            </button>
-          ))}
+        <div>
+          <p className="mb-2 text-sm text-muted">Try asking:</p>
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLES.map((e) => (
+              <button
+                key={e}
+                onClick={() => ask(e)}
+                disabled={!aiEnabled || busy}
+                className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-surface-2 disabled:opacity-50"
+              >
+                {e}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      <form onSubmit={(e) => { e.preventDefault(); ask(question); }} className="flex gap-2">
-        <input value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={500} placeholder="Ask about what you own…" aria-label="Question" disabled={!aiEnabled} className="flex-1 rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700" />
-        <button disabled={!aiEnabled || busy || !question.trim()} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
-          {busy ? "…" : "Ask"}
-        </button>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          ask(question);
+        }}
+        className="sticky bottom-4 flex gap-2 rounded-xl border border-line bg-background/90 p-2 shadow-sm backdrop-blur"
+      >
+        <label htmlFor="question" className="sr-only">
+          Your question
+        </label>
+        <input
+          id="question"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          maxLength={500}
+          placeholder={aiEnabled ? "Ask about what you own…  (Enter to send)" : "AI is unavailable right now"}
+          disabled={!aiEnabled}
+          autoComplete="off"
+          className={`${inputClass} border-0 bg-transparent focus-visible:outline-offset-0`}
+        />
+        <Button disabled={!aiEnabled || busy || !question.trim()} aria-label="Send question">
+          <SendHorizontal className="size-4" aria-hidden />
+          <span className="hidden sm:inline">{busy ? "Thinking…" : "Ask"}</span>
+        </Button>
       </form>
     </div>
   );
